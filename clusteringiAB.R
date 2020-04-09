@@ -16,7 +16,7 @@ ecms_unique <- ecms %>% distinct()
 
 # Drop uninteresting ECMs
 interesting_ecms <- ecms_unique %>%
-  filter(objective > 0 & M_gal_e >= 0 & M_glc__D_e < 0 & M_lac__D_e >= 0 & M_lac__L_e >= 0 & M_man_e >= 0 & M_fru_e >=0)
+  filter(objective > 0 & M_gal_e == 0 & M_glc__D_e < 0 & M_lac__D_e == 0 & M_lac__L_e == 0 & M_man_e == 0 & M_fru_e ==0)
 
 # Drop unused metabolites, and empty ECMs (they are normally not present to begin with)
 col_sums <- colSums(abs(interesting_ecms))
@@ -28,24 +28,24 @@ filled_ecms <- interesting_ecms[row_indices,col_indices]
 # Free memory
 # rm(ecms)
 
-row.order <- hclust(dist(interesting_ecms,method='manhattan'), method = "complete")$order # clustering
+row.order <- hclust(dist(filled_ecms,method='manhattan'), method = "complete")$order # clustering
 
 # Cluster metabolites
-col.order <- hclust(dist(t(interesting_ecms),method='manhattan'), method = "complete")$order
-ordered_metabs <- attributes(interesting_ecms)$names[col.order]
+col.order <- hclust(dist(t(filled_ecms),method='manhattan'), method = "complete")$order
+ordered_metabs <- attributes(filled_ecms)$names[col.order]
 
 # Order ECMs according to clustering
-interesting_ecms <- interesting_ecms[row.order,] %>%
+filled_ecms <- filled_ecms[row.order,] %>%
   as.data.frame() %>%
   mutate(ecm=1:n()) %>%
   gather('metabolite', 'stoich', -ecm)
 
 # Order metabolites according to clustering
-interesting_ecms$metabolite <- factor(interesting_ecms$metabolite,
+filled_ecms$metabolite <- factor(filled_ecms$metabolite,
                                                 levels=ordered_metabs)
 
 # Render clusters
-interesting_ecms %>%
+filled_ecms %>%
   ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
   geom_tile() + 
   scale_fill_gradientn(colours = brewer.pal(3, 'RdYlBu'), guide=guide_colorbar(), 
