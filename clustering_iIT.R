@@ -1,4 +1,5 @@
 require('tidyverse')
+library("RColorBrewer")
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
 ecms <- read.csv('data/iIT341_allsubstrates_to_biomass.csv', header=TRUE)
@@ -23,56 +24,40 @@ rownames(filled_ecms) <- 1:nrow(filled_ecms)
 filled_ecms_substrates <- filled_ecms[!names(filled_ecms) %in% c("objective")]
 log_filled_ecms_substrates <- log(-filled_ecms_substrates)
 
+# Replace Inf's by a low number (we want the difference in the clustering between zero and non-zero 
+# to be large, but not infinite)
+min_noninf = min(log_filled_ecms_substrates[log_filled_ecms_substrates!=-Inf])
+log_filled_ecms_substrates[log_filled_ecms_substrates == -Inf] = 10* min_noninf
+
 # Free memory
 rm(ecms)
 
-cluster <- hclust(dist(log_filled_ecms_substrates), method = "complete") # clustering
-
-# Populate a list of absolute ECM indices, such that they are accompanied by their own
-# cluster, and similar clusters are placed near theirs.
-
-row.order <- c()
-for(abs_cluster_index in cluster.order) {
-  print(paste('Doing cluster', abs_cluster_index))
-  kms_index <- floor((abs_cluster_index-1)/20) + 1
-  rel_index <- ((abs_cluster_index-1) %% 20) + 1
-  rows <- as.numeric(rownames(as.data.frame(kms[[kms_index]]$cluster[which(kms[[kms_index]]$cluster == rel_index)])))
-  if (length(rows) > 1){
-    #### This part is where clustering goes wrong. Replace with 'row.order <- append(row.order, rows)' to see difference with unordered ECMs within clusters.
-    rows_ordered <- hclust(dist(filled_ecms[rows,]), method = "average")$order
-    row.order <- append(row.order, rows_ordered)
-  } else {
-    row.order <- append(row.order, rows)
-  }
-}
+row.order <- hclust(dist(log_filled_ecms_substrates,method='manhattan'), method = "complete")$order # clustering
 
 # Cluster metabolites
-col.order <- hclust(dist(t(filled_ecms)))$order
+col.order <- hclust(dist(t(log_filled_ecms_substrates),method='manhattan'), method = "complete")$order
+ordered_metabs <- attributes(log_filled_ecms_substrates)$names[col.order]
+man_ordered_metabs <- c("M_ala__L_e","M_ala__D_e","M_arg__L_e","M_o2_e","M_pi_e","M_h_e","M_nh4_e","M_so4_e","M_pheme_e",
+                        "M_fe2_e","M_his__L_e", "M_val__L_e","M_leu__L_e", "M_ile__L_e", "M_met__L_e","M_pime_e","M_thm_e")
+log_filled_ecms_substrates[log_filled_ecms_substrates<min_noninf]<-NA
 
-# Render plot
-filled_ecms[rows, col.order] %>%
-  # top_n(1000) %>%
+# Order ECMs according to clustering
+log_filled_ecms_substrates <- log_filled_ecms_substrates[row.order,] %>%
+  as.data.frame() %>%
   mutate(ecm=1:n()) %>%
-  gather('metabolite', 'stoich', -ecm) %>%
-  # group_by(ecm) %>%
-  # mutate(norm_stoich=stoich/max(abs(stoich))) %>%
-  ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
-  geom_tile() + 
-  scale_fill_gradient2(midpoint = 0, low = "magenta", mid = "black",
-                       high = "cyan", space = "Lab" ) +
-  geom_raster() +
-  theme(axis.text.y = element_text(angle = 0, hjust = 1),
-        axis.text.x = element_blank())
+  gather('metabolite', 'stoich', -ecm)
+
+# Order metabolites according to clustering
+log_filled_ecms_substrates$metabolite <- factor(log_filled_ecms_substrates$metabolite,
+                                                levels=man_ordered_metabs)
 
 # Render clusters
-norm_centers[cluster.order,] %>%
-  as.data.frame() %>%
-  mutate(center=1:n()) %>%
-  gather('metabolite', 'stoich', -center) %>%
-  ggplot(aes(x=center, y=metabolite, fill=stoich)) +
+log_filled_ecms_substrates %>%
+  ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
   geom_tile() + 
-  scale_fill_gradient2(midpoint = 0, low = "magenta", mid = "black",
-                       high = "cyan", space = "Lab" ) +
+  scale_fill_gradient(guide=guide_colorbar(reverse=FALSE),
+                      labels = function(orig){as.character(format(-exp(orig),digits=3))},
+                      na.value='grey10') +
   geom_raster() +
   theme(axis.text.y = element_text(angle = 0, hjust = 1),
         axis.text.x = element_blank())
