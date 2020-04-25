@@ -1,6 +1,9 @@
 require('tidyverse')
 library("RColorBrewer")
 
+log_shift = 1.1
+shift_pos = 23
+
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
 ecms <- read.csv('data/iIT341_allsubstrates_to_biomass.csv', header=TRUE)
 
@@ -19,46 +22,70 @@ filled_ecms <- interesting_ecms[row_indices,col_indices] %>%
   as.data.frame()
 rownames(filled_ecms) <- 1:nrow(filled_ecms)
 
-# Log-scale all coefficients except for objective coefficients
-# Remove the objective from dataframe, so that all numbers are negative
-filled_ecms_substrates <- filled_ecms[!names(filled_ecms) %in% c("objective")]
-log_filled_ecms_substrates <- log(-filled_ecms_substrates)
+# Log-scale all coefficients except for objective coefficients. Then shift numbers such that they are all negative again
+max_neg = max(filled_ecms[filled_ecms<0])
+filled_ecms[filled_ecms<0] <- -log(-filled_ecms[filled_ecms<0]) + log_shift * log(-max_neg)
 
-# Replace Inf's by a low number (we want the difference in the clustering between zero and non-zero 
-# to be large, but not infinite)
-min_noninf = min(log_filled_ecms_substrates[log_filled_ecms_substrates!=-Inf])
-log_filled_ecms_substrates[log_filled_ecms_substrates == -Inf] = 10* min_noninf
+# Shift positive numbers too, to better use colourscale
+filled_ecms[filled_ecms>0] <- filled_ecms[filled_ecms>0]*shift_pos
 
-# Free memory
-rm(ecms)
+row_clust <- hclust(dist(filled_ecms,method='manhattan'), method = "complete") # clustering
 
-row.order <- hclust(dist(log_filled_ecms_substrates,method='manhattan'), method = "complete")$order # clustering
+row.order <- row_clust$order
+
+plot(row_clust) # display dendogram
+groups <- cutree(row_clust, k=20) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(row_clust, k=20, border="red")
+# Convert hclust into a dendrogram and plot
+hcd <- as.dendrogram(row_clust)
+# Default plot
+plot(hcd, type = "rectangle", ylab = "Height")
 
 # Cluster metabolites
-col.order <- hclust(dist(t(log_filled_ecms_substrates),method='manhattan'), method = "complete")$order
-ordered_metabs <- attributes(log_filled_ecms_substrates)$names[col.order]
+col.order <- hclust(dist(t(filled_ecms),method='manhattan'), method = "complete")$order
+ordered_metabs <- attributes(filled_ecms)$names[col.order]
 man_ordered_metabs <- c("M_ala__L_e","M_ala__D_e","M_arg__L_e","M_o2_e","M_pi_e","M_h_e","M_nh4_e","M_so4_e","M_pheme_e",
-                        "M_fe2_e","M_his__L_e", "M_val__L_e","M_leu__L_e", "M_ile__L_e", "M_met__L_e","M_pime_e","M_thm_e")
-log_filled_ecms_substrates[log_filled_ecms_substrates<min_noninf]<-NA
+                        "M_fe2_e","M_his__L_e", "M_val__L_e","M_leu__L_e", "M_ile__L_e", "M_met__L_e","M_pime_e","M_thm_e","objective")
 
 # Order ECMs according to clustering
-log_filled_ecms_substrates <- log_filled_ecms_substrates[row.order,] %>%
+clustered_ecms <- filled_ecms[row.order,] %>%
   as.data.frame() %>%
   mutate(ecm=1:n()) %>%
   gather('metabolite', 'stoich', -ecm)
 
 # Order metabolites according to clustering
-log_filled_ecms_substrates$metabolite <- factor(log_filled_ecms_substrates$metabolite,
+clustered_ecms$metabolite <- factor(clustered_ecms$metabolite,
                                                 levels=man_ordered_metabs)
 
+inv_get_labels <- function(orig){
+  result = rep(NA,length(orig))
+  for(i in 1:length(orig)){
+    if (orig[i]<0){
+      result[i] = -log(-orig[i]) + log_shift*log(-max_neg)
+    }else if(orig[i]>0){
+      result[i] = orig[i]*shift_pos
+    }else{
+      result[i] = 0
+    }
+  }
+  result
+}
+
+paper_colors = brewer.pal(3, 'RdYlBu')
+
 # Render clusters
-log_filled_ecms_substrates %>%
+clustered_ecms %>%
   ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
-  geom_tile() + 
-  scale_fill_gradient(guide=guide_colorbar(reverse=FALSE),
-                      labels = function(orig){as.character(format(-exp(orig),digits=3))},
-                      na.value='grey10') +
+  geom_tile() +
+  scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = "white",
+                       high = paper_colors[3], space = "Lab", breaks=inv_get_labels(c(-10,-.001,0,1)),
+                       labels=as.character(c(-10,-1e-3,0,1),format='e'),
+                       na.value='white',
+                       guide=guide_colorbar(label.theme = element_text(family='Calibri',size=16), 
+                                            title.theme = element_text(family='Calibri',size=22))) +
   geom_raster() +
-  theme(axis.text.y = element_text(angle = 0, hjust = 1),
+  theme(axis.title.x = element_text(family='Calibri', size=22),
+        axis.title.y = element_text(family='Calibri', size=22),
+        axis.text.y = element_text(angle = 0, hjust = 1, family='Calibri', size=16),
         axis.text.x = element_blank())
-  
