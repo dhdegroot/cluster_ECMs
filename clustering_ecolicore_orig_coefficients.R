@@ -1,14 +1,15 @@
 require('tidyverse')
 library("RColorBrewer")
 library(extrafont)
-font_import(pattern='calibri')
+font_import(pattern='calibri.ttf')
 loadfonts(device = "win")
 
 log_shift <- 1
 log_scale <- TRUE
+BIOMASS_ONE <- TRUE
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
-ecms <- read.csv('data/conversions_e_coli_core.csv', header=TRUE)
+ecms <- read.csv('data/conversions_ecolicore.csv', header=TRUE)
 interesting_ecms <- ecms %>% filter(objective > 0)
 
 # Drop unused metabolites, and empty ECMs (they are normally not present to begin with)
@@ -17,9 +18,16 @@ row_sums <- rowSums(abs(interesting_ecms))
 col_indices <- col_sums != 0
 row_indices <- row_sums != 0
 filled_ecms <- interesting_ecms[row_indices,col_indices] %>%
-  apply(1, function(x){x / x['objective']}) %>%
+  apply(1, function(x){x / sum(abs(x))}) %>%
   t() %>%
   as.data.frame()
+
+if(BIOMASS_ONE){
+  filled_ecms <- interesting_ecms[row_indices,col_indices] %>%
+    apply(1, function(x){x / x['objective']}) %>%
+    t() %>%
+    as.data.frame()
+}
 
 # Log-scale all coefficients
 # First log-scale all positives, but add large number such that all numbers remain positive
@@ -32,9 +40,7 @@ if(log_scale){
   filled_ecms[filled_ecms<0] <- -log(-filled_ecms[filled_ecms<0]) + log_shift * log(-max_neg)
 }
 
-# Free memory
-# rm(ecms)
-
+# Cluster ECMs
 row.order <- hclust(dist(filled_ecms,method='manhattan'), method = "average")$order # clustering
 
 # Cluster metabolites
@@ -43,22 +49,17 @@ sgn_ecms[sgn_ecms<0] = -1
 sgn_ecms[sgn_ecms>0] = 1
 
 col.order <- order(colSums(sgn_ecms))
+# row.order <- hclust(dist(sgn_ecms,method='manhattan'), method = "average")$order # clustering
 # col.order <- hclust(dist(t(filled_ecms),method='manhattan'), method = "average")$order
 ordered_metabs <- attributes(filled_ecms)$names[col.order]
 
 # Order ECMs according to clustering
-filled_ecms <- filled_ecms[row.order,] %>% 
-  as.data.frame() %>%
+clustered_ecms <- filled_ecms[row.order,] %>% 
   mutate(ecm=1:n()) %>%
   gather('metabolite', 'stoich', -ecm)
 
-# filled_ecms <- filled_ecms %>%
-#  as.data.frame() %>%
-#  mutate(ecm=1:n()) %>%
-#  gather('metabolite', 'stoich', -ecm)
-
 # Order metabolites according to clustering
-filled_ecms$metabolite <- factor(filled_ecms$metabolite,
+clustered_ecms$metabolite <- factor(clustered_ecms$metabolite,
                                  levels=ordered_metabs)
 if(log_scale){
   get_labels <- function(orig){
@@ -98,7 +99,7 @@ if(log_scale){
 paper_colors = brewer.pal(3, 'RdYlBu')
 
 # Render clusters
-filled_ecms %>%
+clustered_ecms %>%
   ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
   geom_tile() +
   scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = paper_colors[2],
