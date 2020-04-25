@@ -1,5 +1,8 @@
 require('tidyverse')
 library("RColorBrewer")
+library(extrafont)
+font_import(pattern='calibri')
+loadfonts(device = "win")
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
 ecms <- read_csv('data/conversions_iAB.csv', col_names=FALSE)
@@ -31,25 +34,30 @@ filled_ecms <- interesting_ecms[row_indices,col_indices]
 row.order <- hclust(dist(filled_ecms,method='manhattan'), method = "complete")$order # clustering
 
 # Cluster metabolites
-col.order <- hclust(dist(t(filled_ecms),method='manhattan'), method = "complete")$order
+col.order <- order(colSums(filled_ecms))
+# col.order <- hclust(dist(t(filled_ecms),method='manhattan'), method = "complete")$order
 ordered_metabs <- attributes(filled_ecms)$names[col.order]
 
 # Order ECMs according to clustering
-filled_ecms <- filled_ecms[row.order,] %>%
+clustered_ecms <- filled_ecms[row.order,] %>%
   as.data.frame() %>%
   mutate(ecm=1:n()) %>%
   gather('metabolite', 'stoich', -ecm)
 
 # Order metabolites according to clustering
-filled_ecms$metabolite <- factor(filled_ecms$metabolite,
+clustered_ecms$metabolite <- factor(clustered_ecms$metabolite,
                                                 levels=ordered_metabs)
 
 # Render clusters
-filled_ecms %>%
+clustered_ecms %>%
   ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
   geom_tile() + 
-  scale_fill_gradientn(colours = brewer.pal(3, 'RdYlBu'), guide=guide_colorbar(), 
-                      na.value='white') +
+  #scale_fill_brewer( type="div", palette=c("#F9BA00FF", "#88FA4EFF", "#56C1FFFF"), guide="legend") +
+  scale_fill_gradientn(colours = brewer.pal(3, 'RdYlBu'), n.breaks=3, labels=c('uptake','none','export'), 
+                       guide=guide_legend( label.theme = element_text(family='Calibri',size=18)), 
+                       na.value='white', name=NULL) +
   geom_raster() +
-  theme(axis.text.y = element_text(angle = 0, hjust = 1),
+  theme(axis.title.x = element_text(family='Calibri', size=18),
+        axis.title.y = element_text(family='Calibri', size=18),
+        axis.text.y = element_text(angle = 0, hjust = 1, family='Calibri'),
         axis.text.x = element_blank())

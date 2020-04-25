@@ -70,6 +70,8 @@ filled_ecms %>%
   scale_fill_gradient2(midpoint = 0, low = "magenta", mid = "black",
                        high = "cyan", space = "Lab" ) +
   geom_raster() +
-  theme(axis.text.y = element_text(angle = 0, hjust = 1),
+  theme(axis.title.x = element_text(family='Calibri', size=18),
+        axis.title.y = element_text(family='Calibri', size=18),
+        axis.text.y = element_text(angle = 0, hjust = 1, family='Calibri'),
         axis.text.x = element_blank())
 
