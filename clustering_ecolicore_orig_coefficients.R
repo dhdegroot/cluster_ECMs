@@ -4,12 +4,12 @@ library(extrafont)
 font_import(pattern='calibri.ttf')
 loadfonts(device = "win")
 
-log_shift <- 1
+log_shift <- 1.1 # Has to be greater than 1
 log_scale <- TRUE
 BIOMASS_ONE <- TRUE
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
-ecms <- read.csv('data/conversions_ecolicore.csv', header=TRUE)
+ecms <- read.csv('data/conversions_ecolicore_indirect.csv', header=TRUE)
 interesting_ecms <- ecms %>% filter(objective > 0)
 
 # Drop unused metabolites, and empty ECMs (they are normally not present to begin with)
