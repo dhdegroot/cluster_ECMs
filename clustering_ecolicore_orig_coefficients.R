@@ -44,7 +44,7 @@ if(log_scale){
 row.order <- hclust(dist(filled_ecms,method='manhattan'), method = "average")$order # clustering
 
 # Cluster metabolites
-sgn_ecms <- filled_ecms
+sgn_ecms <- data.frame(filled_ecms)
 sgn_ecms[sgn_ecms<0] = -1
 sgn_ecms[sgn_ecms>0] = 1
 
