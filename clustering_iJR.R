@@ -5,10 +5,10 @@ font_import(pattern='calibri')
 loadfonts(device = "win")
 
 log_shift = 1.1
-shift_pos = 23
+shift_pos = 6
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
-ecms <- read.csv('data/iIT341_allsubstrates_to_biomass.csv', header=TRUE)
+ecms <- read.csv('data/iJR_hideallexceptglco2biomass.csv', header=TRUE)
 
 # Drop uninteresting ECMs
 interesting_ecms <- ecms %>%
@@ -33,13 +33,8 @@ filled_ecms[filled_ecms<0] <- -log(-filled_ecms[filled_ecms<0]) + log_shift * lo
 filled_ecms[filled_ecms>0] <- filled_ecms[filled_ecms>0]*shift_pos
 
 row_clust <- hclust(dist(filled_ecms,method='manhattan'), method = "complete") # clustering
-
 row.order <- row_clust$order
 
-plot(row_clust) # display dendogram
-groups <- cutree(row_clust, k=20) # cut tree into 5 clusters
-# draw dendogram with red borders around the 5 clusters
-rect.hclust(row_clust, k=20, border="red")
 # Convert hclust into a dendrogram and plot
 hcd <- as.dendrogram(row_clust)
 # Default plot
@@ -48,8 +43,6 @@ plot(hcd, type = "rectangle", ylab = "Height")
 # Cluster metabolites
 col.order <- hclust(dist(t(filled_ecms),method='manhattan'), method = "complete")$order
 ordered_metabs <- attributes(filled_ecms)$names[col.order]
-man_ordered_metabs <- c("M_ala__L_e","M_ala__D_e","M_arg__L_e","M_o2_e","M_pi_e","M_h_e","M_nh4_e","M_so4_e","M_pheme_e",
-                        "M_fe2_e","M_his__L_e", "M_val__L_e","M_leu__L_e", "M_ile__L_e", "M_met__L_e","M_pime_e","M_thm_e","objective")
 
 # Order ECMs according to clustering
 clustered_ecms <- filled_ecms[row.order,] %>%
@@ -59,7 +52,7 @@ clustered_ecms <- filled_ecms[row.order,] %>%
 
 # Order metabolites according to clustering
 clustered_ecms$metabolite <- factor(clustered_ecms$metabolite,
-                                                levels=man_ordered_metabs)
+                                    levels=ordered_metabs)
 
 inv_get_labels <- function(orig){
   result = rep(NA,length(orig))
