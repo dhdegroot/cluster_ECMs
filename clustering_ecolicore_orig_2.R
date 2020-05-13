@@ -10,7 +10,7 @@ BIOMASS_ONE <- TRUE
 CLUSTER_TERNARY <- FALSE
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
-ecms <- read.csv('data/conversions_ecolicore_onlycarbon.csv', header=TRUE)
+ecms <- read.csv('data/conversions_ecolicore_indirect.csv', header=TRUE)
 
 # Read in matching of metabolite ids and names
 metab_info <- read_csv(file.path('data','metab_info_ecolicore.csv'),col_names=TRUE)
@@ -50,8 +50,8 @@ if(log_scale){
   filled_ecms[filled_ecms<0] <- -log(-filled_ecms[filled_ecms<0]) + log_shift * log(-max_neg)
 }
 
-clust_weights = list("Acetate"=1,"Acetaldehyde"=2,"2-Oxoglutarate"=4,"CO2"=80,"Ethanol"=6,"Formate"=40,"D-Glucose"=100,"L-Glutamate"=2,"D-Lactate"=5,
-                     "Pyruvate"=4,"Succinate"=20,"Biomass"=100)
+clust_weights = list("Acetate"=1,"Acetaldehyde"=2,"2-Oxoglutarate"=4,"CO2"=80,"Ethanol"=6,"Formate"=40,"D-Glucose"=100,"L-Glutamate"=2,"H2O"=50,"H+"=20,"D-Lactate"=5,
+                     "Ammonium"=20, "O2"=50, "Phosphate"=10, "Pyruvate"=4,"Succinate"=20,"Biomass"=100)
 # clust_weights <- lapply(clust_weights,function(x){x^2})
 
 weighted_ecms <- filled_ecms * clust_weights
