@@ -59,7 +59,7 @@ weighted_ecms <- filled_ecms * clust_weights
 row.order <- hclust(dist(weighted_ecms,method='manhattan'), method = "average")$order # clustering
 
 factor_diff_obj <- mean(filled_ecms[filled_ecms$Biomass!=0,]$'D-Glucose') / mean(filled_ecms[filled_ecms$Biomass==0,]$'D-Glucose')
-filled_ecms[filled_ecms$Biomass==0,]<-filled_ecms[filled_ecms$Biomass==0,]*(factor_diff_obj/4)
+filled_ecms[filled_ecms$Biomass==0,]<-filled_ecms[filled_ecms$Biomass==0,]*(factor_diff_obj)
 
 # Cluster metabolites
 sgn_ecms <- data.frame(filled_ecms)
@@ -118,12 +118,13 @@ if(log_scale){
 }
 
 paper_colors = brewer.pal(3, 'RdYlBu')
+clustered_ecms[clustered_ecms$stoich==0,]$stoich<-NA
 
 # Render clusters
 clustered_ecms %>%
   ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
   geom_tile() +
-  scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = "white",
+  scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = "grey90", na.value = 'white',
                        high = paper_colors[3], space = "Lab", breaks=inv_get_labels(c(-100,-1,0,1,100)),
                        labels=as.character(c(-100,-1,0,1,100)),
                        guide=guide_colorbar(label.theme = element_text(family='Calibri',size=16), 

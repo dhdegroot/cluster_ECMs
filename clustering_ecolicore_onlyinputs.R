@@ -7,10 +7,10 @@ loadfonts(device = "win")
 log_shift <- 1.1 # Has to be greater than 1
 log_scale <- TRUE
 BIOMASS_ONE <- TRUE
-CLUSTER_TERNARY <- TRUE
+CLUSTER_TERNARY <- FALSE
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
-ecms <- read.csv('data/conversions_ecolicore_indirect.csv', header=TRUE)
+ecms <- read.csv('data/conversions_ecolicore_onlyinputs.csv', header=TRUE)
 
 # Read in matching of metabolite ids and names
 metab_info <- read_csv(file.path('data','metab_info_ecolicore.csv'),col_names=TRUE)
@@ -28,13 +28,13 @@ row_sums <- rowSums(abs(interesting_ecms))
 col_indices <- col_sums != 0
 row_indices <- row_sums != 0
 filled_ecms <- interesting_ecms[row_indices,col_indices] %>%
-  apply(1, function(x){10*x / sum(abs(x))}) %>%
+  apply(1, function(x){x / sum(abs(x))}) %>%
   t() %>%
   as.data.frame()
 
 if(BIOMASS_ONE){
-  filled_ecms[filled_ecms$Objective!=0,] <- filled_ecms[filled_ecms$Objective!=0,] %>%
-    apply(1, function(x){x / x['Objective']}) %>%
+  filled_ecms[filled_ecms$Biomass!=0,] <- filled_ecms[filled_ecms$Biomass!=0,] %>%
+    apply(1, function(x){x / x['Biomass']}) %>%
     t() %>%
     as.data.frame()
 }
@@ -50,16 +50,25 @@ if(log_scale){
   filled_ecms[filled_ecms<0] <- -log(-filled_ecms[filled_ecms<0]) + log_shift * log(-max_neg)
 }
 
+clust_weights = list("CO2"=50,"D-Glucose"=100,"H2O"=10,"Ammonium"=1,"O2"=4,"Phosphate"=1,"Biomass"=100)
+# clust_weights <- lapply(clust_weights,function(x){x^2})
+
+weighted_ecms <- filled_ecms * clust_weights
 # Cluster ECMs
-row.order <- hclust(dist(filled_ecms,method='manhattan'), method = "average")$order # clustering
+row.order <- hclust(dist(weighted_ecms,method='manhattan'), method = "average")$order # clustering
+
+factor_diff_obj <- mean(filled_ecms[filled_ecms$Biomass!=0,]$'D-Glucose') / mean(filled_ecms[filled_ecms$Biomass==0,]$'D-Glucose')
+filled_ecms[filled_ecms$Biomass==0,]<-filled_ecms[filled_ecms$Biomass==0,]*(factor_diff_obj)
 
 # Cluster metabolites
 sgn_ecms <- data.frame(filled_ecms)
 sgn_ecms[sgn_ecms<0] = -1
 sgn_ecms[sgn_ecms>0] = 1
 
-col.order <- order(colSums(sgn_ecms[, names(sgn_ecms)!= 'objective']))
-col.order <- c(col.order, which(names(filled_ecms)=='objective'))
+col.order <- order(colSums(sgn_ecms))
+col.order <- col.order[col.order!=which(names(filled_ecms) == "Biomass")]
+col.order <- c(col.order, which(names(filled_ecms)=='Biomass'))
+
 if(CLUSTER_TERNARY){
   row.order <- hclust(dist(sgn_ecms,method='manhattan'), method = "average")$order # clustering
 }
@@ -111,15 +120,16 @@ if(log_scale){
 
 paper_colors = brewer.pal(3, 'RdYlBu')
 
+clustered_ecms[clustered_ecms$stoich==0,]$stoich<-NA
+
 # Render clusters
 clustered_ecms %>%
   ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
   geom_tile() +
-  scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = "white",
-                       high = paper_colors[3], space = "Lab", breaks=inv_get_labels(c(-100,-1,0,1,100)),
+  scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = 'grey90',
+                       high = paper_colors[3], space = "Lab", na.value='white', breaks=inv_get_labels(c(-100,-1,0,1,100)),
                        labels=as.character(c(-100,-1,0,1,100)),
-                       guide=guide_colorbar(label.theme = element_text(family='Calibri',size=16), 
-                                          title.theme = element_text(family='Calibri',size=22))) +
+                       guide=FALSE) +
   geom_raster() +
   theme(axis.title.x = element_text(family='Calibri', size=22),
         axis.title.y = element_text(family='Calibri', size=22),

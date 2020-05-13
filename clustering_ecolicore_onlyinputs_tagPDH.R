@@ -10,7 +10,7 @@ BIOMASS_ONE <- TRUE
 CLUSTER_TERNARY <- FALSE
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
-ecms <- read.csv('data/conversions_ecolicore_onlycarbon.csv', header=TRUE)
+ecms <- read.csv('data/conversions_ecolicore_onlyinputsPDH.csv', header=TRUE)
 
 # Read in matching of metabolite ids and names
 metab_info <- read_csv(file.path('data','metab_info_ecolicore.csv'),col_names=TRUE)
@@ -50,8 +50,8 @@ if(log_scale){
   filled_ecms[filled_ecms<0] <- -log(-filled_ecms[filled_ecms<0]) + log_shift * log(-max_neg)
 }
 
-clust_weights = list("Acetate"=1,"Acetaldehyde"=2,"2-Oxoglutarate"=4,"CO2"=80,"Ethanol"=6,"Formate"=40,"D-Glucose"=100,"L-Glutamate"=2,"D-Lactate"=5,
-                     "Pyruvate"=4,"Succinate"=20,"Biomass"=100)
+clust_weights = list("CO2"=50,"D-Glucose"=100,"H2O"=50,"Ammonium"=1,"O2"=40,"Phosphate"=1,"Biomass"=100,"PDH-flux"=100)
+clust_weights = list("CO2"=50,"D-Glucose"=100,"H2O"=10,"Ammonium"=1,"O2"=4,"Phosphate"=1,"Biomass"=100,"PDH-flux"=100)
 # clust_weights <- lapply(clust_weights,function(x){x^2})
 
 weighted_ecms <- filled_ecms * clust_weights
@@ -66,8 +66,10 @@ sgn_ecms <- data.frame(filled_ecms)
 sgn_ecms[sgn_ecms<0] = -1
 sgn_ecms[sgn_ecms>0] = 1
 
-col.order <- order(colSums(sgn_ecms[, names(sgn_ecms)!= 'Biomass']))
+col.order <- order(colSums(sgn_ecms))
+col.order <- col.order[col.order!=which(names(filled_ecms) == "Biomass")]
 col.order <- c(col.order, which(names(filled_ecms)=='Biomass'))
+
 if(CLUSTER_TERNARY){
   row.order <- hclust(dist(sgn_ecms,method='manhattan'), method = "average")$order # clustering
 }
@@ -118,12 +120,13 @@ if(log_scale){
 }
 
 paper_colors = brewer.pal(3, 'RdYlBu')
+clustered_ecms[clustered_ecms$stoich==0,]$stoich<-NA
 
 # Render clusters
 clustered_ecms %>%
   ggplot(aes(x=ecm, y=metabolite, fill=stoich)) +
   geom_tile() +
-  scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = "white",
+  scale_fill_gradient2(midpoint = 0, low = paper_colors[1], mid = "grey90", na.value='white',
                        high = paper_colors[3], space = "Lab", breaks=inv_get_labels(c(-100,-1,0,1,100)),
                        labels=as.character(c(-100,-1,0,1,100)),
                        guide=FALSE) +
