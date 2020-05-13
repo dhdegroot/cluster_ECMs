@@ -7,10 +7,10 @@ loadfonts(device = "win")
 log_shift <- 1.1 # Has to be greater than 1
 log_scale <- TRUE
 BIOMASS_ONE <- TRUE
-CLUSTER_TERNARY <- TRUE
+CLUSTER_TERNARY <- FALSE
 
 # Read the ECMs as row vectors (R convention), and add column names for each metabolite
-ecms <- read.csv('data/conversions_ecolicore_indirect.csv', header=TRUE)
+ecms <- read.csv('data/conversions_ecolicore_onlycarbon.csv', header=TRUE)
 
 # Read in matching of metabolite ids and names
 metab_info <- read_csv(file.path('data','metab_info_ecolicore.csv'),col_names=TRUE)
@@ -28,7 +28,7 @@ row_sums <- rowSums(abs(interesting_ecms))
 col_indices <- col_sums != 0
 row_indices <- row_sums != 0
 filled_ecms <- interesting_ecms[row_indices,col_indices] %>%
-  apply(1, function(x){10*x / sum(abs(x))}) %>%
+  apply(1, function(x){x / sum(abs(x))}) %>%
   t() %>%
   as.data.frame()
 
@@ -50,8 +50,16 @@ if(log_scale){
   filled_ecms[filled_ecms<0] <- -log(-filled_ecms[filled_ecms<0]) + log_shift * log(-max_neg)
 }
 
+clust_weights = list("Acetate"=1,"Acetaldehyde"=2,"2-Oxoglutarate"=4,"CO2"=80,"Ethanol"=6,"Formate"=40,"D-Glucose"=100,"L-Glutamate"=2,"D-Lactate"=5,
+                     "Pyruvate"=4,"Succinate"=20,"Objective"=100)
+# clust_weights <- lapply(clust_weights,function(x){x^2})
+
+weighted_ecms <- filled_ecms * clust_weights
 # Cluster ECMs
-row.order <- hclust(dist(filled_ecms,method='manhattan'), method = "average")$order # clustering
+row.order <- hclust(dist(weighted_ecms,method='manhattan'), method = "average")$order # clustering
+
+factor_diff_obj <- mean(filled_ecms[filled_ecms$Objective!=0,]$'D-Glucose') / mean(filled_ecms[filled_ecms$Objective==0,]$'D-Glucose')
+filled_ecms[filled_ecms$Objective==0,]<-filled_ecms[filled_ecms$Objective==0,]*(factor_diff_obj/4)
 
 # Cluster metabolites
 sgn_ecms <- data.frame(filled_ecms)

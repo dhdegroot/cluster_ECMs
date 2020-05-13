@@ -14,13 +14,21 @@ ecms <- read.csv('data/iIT341_allsubstrates_to_biomass.csv', header=TRUE)
 interesting_ecms <- ecms %>%
   filter(objective > 0)
 
+# Read in matching of metabolite ids and names
+metab_info <- read_csv(file.path('data','metab_info_iIT.csv'),col_names=TRUE)
+metab_names <- c()
+for (col in colnames(interesting_ecms)) {
+  metab_names <- c(metab_names,metab_info[metab_info$id==col,]$name)
+}
+colnames(interesting_ecms) <- metab_names
+
 # Drop unused metabolites, and empty ECMs (they are normally not present to begin with)
 col_sums <- colSums(interesting_ecms)
 row_sums <- rowSums(interesting_ecms)
 col_indices <- col_sums != 0
 row_indices <- row_sums != 0
 filled_ecms <- interesting_ecms[row_indices,col_indices] %>%
-  apply(1, function(x){x / x['objective']}) %>%
+  apply(1, function(x){x / x['Objective']}) %>%
   t() %>%
   as.data.frame()
 rownames(filled_ecms) <- 1:nrow(filled_ecms)
@@ -50,6 +58,13 @@ col.order <- hclust(dist(t(filled_ecms),method='manhattan'), method = "complete"
 ordered_metabs <- attributes(filled_ecms)$names[col.order]
 man_ordered_metabs <- c("M_ala__L_e","M_ala__D_e","M_arg__L_e","M_o2_e","M_pi_e","M_h_e","M_nh4_e","M_so4_e","M_pheme_e",
                         "M_fe2_e","M_his__L_e", "M_val__L_e","M_leu__L_e", "M_ile__L_e", "M_met__L_e","M_pime_e","M_thm_e","objective")
+
+# Read in matching of metabolite ids and names
+man_ordered_names <- c()
+for (col in man_ordered_metabs) {
+  man_ordered_names <- c(man_ordered_names,metab_info[metab_info$id==col,]$name)
+}
+man_ordered_metabs <- man_ordered_names
 
 # Order ECMs according to clustering
 clustered_ecms <- filled_ecms[row.order,] %>%
