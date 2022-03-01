@@ -1,0 +1,75 @@
+id,name
+M_13dpg_c,3-Phospho-D-glyceroyl phosphate
+M_2pg_c,D-Glycerate 2-phosphate
+M_3pg_c,3-Phospho-D-glycerate
+M_6pgc_c,6-Phospho-D-gluconate
+M_6pgl_c,"6-phospho-D-glucono-1,5-lactone"
+M_ac_c,Acetate
+M_ac_e,Acetate
+M_acald_c,Acetaldehyde
+M_acald_e,Acetaldehyde
+M_accoa_c,Acetyl-CoA
+M_acon_C_c,Cis-Aconitate
+M_actp_c,Acetyl phosphate
+M_adp_c,ADP C10H12N5O10P2
+M_akg_c,2-Oxoglutarate
+M_akg_e,2-Oxoglutarate
+M_amp_c,AMP C10H12N5O7P
+M_atp_c,ATP C10H12N5O13P3
+M_cit_c,Citrate
+M_co2_c,CO2 CO2
+M_co2_e,CO2
+M_coa_c,Coenzyme A
+M_dhap_c,Dihydroxyacetone phosphate
+M_e4p_c,D-Erythrose 4-phosphate
+M_etoh_c,Ethanol
+M_etoh_e,Ethanol
+M_f6p_c,D-Fructose 6-phosphate
+M_fdp_c,"D-Fructose 1,6-bisphosphate"
+M_for_c,Formate
+M_for_e,Formate
+M_fru_e,D-Fructose
+M_fum_c,Fumarate
+M_fum_e,Fumarate
+M_g3p_c,Glyceraldehyde 3-phosphate
+M_g6p_c,D-Glucose 6-phosphate
+M_glc__D_e,D-Glucose
+M_gln__L_c,L-Glutamine
+M_gln__L_e,L-Glutamine
+M_glu__L_c,L-Glutamate
+M_glu__L_e,L-Glutamate
+M_glx_c,Glyoxylate
+M_h2o_c,H2O H2O
+M_h2o_e,H2O
+M_h_c,H+
+M_h_e,H+
+M_icit_c,Isocitrate
+M_lac__D_c,D-Lactate
+M_lac__D_e,D-Lactate
+M_mal__L_c,L-Malate
+M_mal__L_e,L-Malate
+M_nad_c,Nicotinamide adenine dinucleotide
+M_nadh_c,Nicotinamide adenine dinucleotide - reduced
+M_nadp_c,Nicotinamide adenine dinucleotide phosphate
+M_nadph_c,Nicotinamide adenine dinucleotide phosphate - reduced
+M_nh4_c,Ammonium
+M_nh4_e,Ammonium
+M_o2_c,O2 O2
+M_o2_e,O2
+M_oaa_c,Oxaloacetate
+M_pep_c,Phosphoenolpyruvate
+M_pi_c,Phosphate
+M_pi_e,Phosphate
+M_pyr_c,Pyruvate
+M_pyr_e,Pyruvate
+M_q8_c,Ubiquinone-8
+M_q8h2_c,Ubiquinol-8
+M_r5p_c,Alpha-D-Ribose 5-phosphate
+M_ru5p__D_c,D-Ribulose 5-phosphate
+M_s7p_c,Sedoheptulose 7-phosphate
+M_succ_c,Succinate
+M_succ_e,Succinate
+M_succoa_c,Succinyl-CoA
+M_xu5p__D_c,D-Xylulose 5-phosphate
+objective,Biomass
+virtual_tag_R_PDH,PDH-flux

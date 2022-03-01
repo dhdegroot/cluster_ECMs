@@ -1,0 +1,3 @@
+--model_path models/iIT341.xml --hide_all_in_or_outputs output --direct False
+
+Date 18/05/2020
