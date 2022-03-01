@@ -39,7 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 # Large data files
-*/data/
-**/data/
 
 *.png
